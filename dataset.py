@@ -41,16 +41,16 @@ def getitem(phase, data_names, item, patch_size):
 
         low_im = data_augmentation(low_im[x:x + patch_size, y:y + patch_size, :], rand_mode)
         high_im = data_augmentation(high_im[x:x + patch_size, y:y + patch_size, :], rand_mode)
-
+        low_im, high_im = low_im.copy(), high_im.copy()
         return low_im, high_im
     elif phase == 'eval':
         low_im = load_images(data_names[item])
         return low_im
 
 
-class TheDataset(data.dataset):
+class TheDataset(data.Dataset):
 
-    def __init__(self, route='./data/', phase='train', patch_size=48):
+    def __init__(self, route='./data/', phase='train', patch_size=320):
         self.route = route
         self.phase = phase
         self.patch_size = patch_size

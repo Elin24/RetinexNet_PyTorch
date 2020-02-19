@@ -61,7 +61,7 @@ def train():
     for epoch in range(args.epoch):
         times_per_epoch, sum_loss = 0, 0.
 
-        dataloader = torch.utils.data.Dataloader(train_set, batch_size=args.batch_size, shuffle=True,
+        dataloader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, shuffle=True,
                                                  num_workers=args.workers, pin_memory=True)
         decom_optim.param_groups[0]['lr'] = lr[epoch]
 

@@ -11,10 +11,11 @@ def gradient(input_tensor, direction):
     smooth_kernel_y = smooth_kernel_x.permute(0, 1, 3, 2)
 
     assert direction in ['x', 'y']
+    device = input_tensor.get_device()
     if direction == "x":
-        kernel = smooth_kernel_x
+        kernel = smooth_kernel_x.to(device)
     else:
-        kernel = smooth_kernel_y
+        kernel = smooth_kernel_y.to(device)
 
     out = F.conv2d(input_tensor, kernel, padding=(1, 1))
     out = torch.abs(out[:, :, 0:h, 0:w])
@@ -28,7 +29,8 @@ def ave_gradient(input_tensor, direction):
 
 
 def smooth(input_l, input_r):
-    rgb_weights = torch.Tensor([0.2989, 0.5870, 0.1140])
+    device = input_l.get_device()
+    rgb_weights = torch.Tensor([0.2989, 0.5870, 0.1140]).to(device)
     input_r = torch.tensordot(input_r, rgb_weights, dims=([-1], [-1]))
     input_r = torch.unsqueeze(input_r, -1)
 
