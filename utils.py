@@ -1,50 +1,33 @@
 import numpy as np
 from PIL import Image
+import torchvision.transforms as TTF
+import random
+import os
+
+def randomCrop(imgs, size):
+    if type(size) == int:
+        size = (size, size)
+    w, h = imgs[0].size
+    ws, hs = random.randint(0, w - size[0]), random.randint(0, h - size[1])
+    wt, ht = ws + size[0], hs + size[1]
+    return [img.crop((ws, hs, wt, ht)) for img in imgs]
 
 
-def data_augmentation(image, mode):
-    if mode == 0:
-        # original
-        return image
-    elif mode == 1:
-        # flip up and down
-        return np.flipud(image)
-    elif mode == 2:
-        # rotate counter-wise 90 degree
-        return np.rot90(image)
-    elif mode == 3:
-        # rotate 90 degree and flip up and down
-        image = np.rot90(image)
-        return np.flipud(image)
-    elif mode == 4:
-        # rotate 180 degree
-        return np.rot90(image, k=2)
-    elif mode == 5:
-        # rotate 180 degree and flip
-        image = np.rot90(image, k=2)
-        return np.flipud(image)
-    elif mode == 6:
-        # rotate 270 degree
-        return np.rot90(image, k=3)
-    elif mode == 7:
-        # rotate 270 degree and flip
-        image = np.rot90(image, k=3)
-        return np.flipud(image)
+img2tensor = TTF.ToTensor()
+train_data_augmentation = TTF.Compose([
+    TTF.Lambda(lambda imgs: imgs if random.random() > 0.5 else [img.transpose(Image.FLIP_LEFT_RIGHT) for img in imgs]),
+    TTF.Lambda(lambda imgs: imgs if random.random() > 0.5 else [img.transpose(Image.FLIP_TOP_BOTTOM) for img in imgs]),
+    TTF.Lambda(lambda imgs: [img2tensor(img) for img in imgs]),
+    TTF.Lambda(lambda xs: xs if random.random() > 0.5 else [x.permute(0, 2, 1) for x in xs])
+])
 
+eval_data_augmentation = TTF.Compose([
+    TTF.Lambda(lambda imgs: [img2tensor(img) for img in imgs])
+])
+test_data_augmentation = TTF.Compose([
+    TTF.ToTensor()
+])
 
-def load_images(file):
-    im = Image.open(file)
-    return np.array(im, dtype="float32") / 255.0
-
-
-def save_images(filepath, result_1, result_2=None):
-    result_1 = np.squeeze(result_1)
-    result_2 = np.squeeze(result_2)
-
-    if not result_2.any():
-        cat_image = result_1
-    else:
-        cat_image = np.concatenate([result_1, result_2], axis=1)
-
-    im = Image.fromarray(np.clip(cat_image * 255.0, 0, 255.0).astype('uint8'))
-    im.save(filepath, 'png')
+def saveimg(img, savedir, imgname):
+    os.makedirs(savedir, exist_ok=True)
+    img.save(os.path.join(savedir, imgname))

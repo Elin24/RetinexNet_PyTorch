@@ -1,8 +1,10 @@
 import random
+from PIL import Image
+import os
 import torch.utils.data as data
 from glob import glob
-from utils import load_images, data_augmentation
-
+import utils
+import torchvision.transforms as TTF
 
 # folder structure
 # data
@@ -15,42 +17,21 @@ from utils import load_images, data_augmentation
 #   |  |low
 #   |  |  |*.png
 def get_dataset_len(route, phase):
-    if phase == 'train':
+    if phase in ['train', 'valid']:
         low_data_names = glob(route + phase + '/low/*.png')
         high_data_names = glob(route + phase + '/high/*.png')
         low_data_names.sort()
         high_data_names.sort()
         assert len(low_data_names) == len(high_data_names)
         return len(low_data_names), [low_data_names, high_data_names]
-    elif phase == 'eval':
-        low_data_names = glob(route + phase + '/low/*.png')
+    elif phase == 'test':
+        low_data_names = glob(route + '/*.png')
         return len(low_data_names), low_data_names
     else:
         return 0, []
 
-
-def getitem(phase, data_names, item, patch_size):
-    if phase == 'train':
-        low_im = load_images(data_names[0][item])
-        high_im = load_images(data_names[1][item])
-
-        h, w, _ = low_im.shape
-        x = random.randint(0, h - patch_size)
-        y = random.randint(0, w - patch_size)
-        rand_mode = random.randint(0, 7)
-
-        low_im = data_augmentation(low_im[x:x + patch_size, y:y + patch_size, :], rand_mode)
-        high_im = data_augmentation(high_im[x:x + patch_size, y:y + patch_size, :], rand_mode)
-        low_im, high_im = low_im.copy(), high_im.copy()
-        return low_im, high_im
-    elif phase == 'eval':
-        low_im = load_images(data_names[item])
-        return low_im
-
-
 class TheDataset(data.Dataset):
-
-    def __init__(self, route='./data/', phase='train', patch_size=320):
+    def __init__(self, route='./data/', phase='train', patch_size=400):
         self.route = route
         self.phase = phase
         self.patch_size = patch_size
@@ -60,4 +41,15 @@ class TheDataset(data.Dataset):
         return self.len
 
     def __getitem__(self, item):
-        return getitem(self.phase, self.data_names, item, self.patch_size)
+        if self.phase == 'test':
+            low_im = Image.open(self.data_names[item])
+            return utils.test_data_augmentation(low_im), os.path.basename(self.data_names[item])
+        
+        low_im = Image.open(self.data_names[0][item])
+        high_im = Image.open(self.data_names[1][item])
+        if self.phase == 'train':
+            low_im, high_im = utils.randomCrop([low_im, high_im], self.patch_size)
+            low_im, high_im = utils.train_data_augmentation([low_im, high_im])
+        elif self.phase == 'eval':
+            low_im, high_im = utils.test_data_augmentation([low_im, high_im])
+        return low_im, high_im

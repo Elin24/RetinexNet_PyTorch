@@ -5,8 +5,9 @@ import torch.nn.functional as F
 
 class DecomNet(nn.Module):
 
-    def __init__(self, layer_num=5, channel=64, kernel_size=3):
+    def __init__(self, Ichannel, layer_num=5, channel=64, kernel_size=3):
         super(DecomNet, self).__init__()
+        assert Ichannel in (1, 3), "Illumation channel is not available"
         self.layer_num = layer_num
         self.conv0 = nn.Conv2d(4, channel, kernel_size*3, padding=4)
         feature_conv = []
@@ -16,13 +17,12 @@ class DecomNet(nn.Module):
                 nn.ReLU()
             ))
         self.conv = nn.ModuleList(feature_conv)
-        self.conv1 = nn.Conv2d(channel, 4, kernel_size, padding=1)
+        self.conv1 = nn.Conv2d(channel, 3+Ichannel, kernel_size, padding=1)
         self.sig = nn.Sigmoid()
 
     def forward(self, x):
-        x_max = torch.max(x, dim=3, keepdim=True)
-        x = torch.cat((x, x_max[0]), dim=3)
-        x = x.permute(0, 3, 1, 2)
+        x_max = torch.max(x, dim=1, keepdim=True)
+        x = torch.cat((x, x_max[0]), dim=1)
 
         out = self.conv0(x)
         for idx in range(self.layer_num):
@@ -30,18 +30,31 @@ class DecomNet(nn.Module):
         out = self.conv1(out)
         out = self.sig(out)
 
-        out = out.permute(0, 2, 3, 1)
-        r_part = out[:, :, :, 0:3]
-        l_part = out[:, :, :, 3:4]
+        r_part = out[:, :3, :, :]
+        l_part = out[:, 3:, :, :]
 
         return out, r_part, l_part
+    
+    def load_state_dict(self, state_dict, strict=True):
+        own_state = self.state_dict()
+        for name, param in state_dict.items():
+            if name.find('module.') == 0:
+                name = name[len('module.'):]
+            if name in own_state:
+                if isinstance(param, nn.Parameter):
+                    param = param.data
+                try:
+                    own_state[name].copy_(param)
+                except Exception:
+                    print('no', name)
 
 
 class RelightNet(nn.Module):
 
-    def __init__(self, channel=64, kernel_size=3):
+    def __init__(self, Ichannel, channel=64, kernel_size=3):
         super(RelightNet, self).__init__()
-        self.conv0 = nn.Conv2d(4, channel, kernel_size, padding=1)
+        assert Ichannel in (1, 3), "Illumation channel is not available"
+        self.conv0 = nn.Conv2d(3 + Ichannel, channel, kernel_size, padding=1)
         self.conv1 = nn.Sequential(
             nn.Conv2d(channel, channel, kernel_size, stride=2, padding=1),
             nn.ReLU()
@@ -67,11 +80,9 @@ class RelightNet(nn.Module):
             nn.ReLU()
         )
         self.feature_fusion = nn.Conv2d(channel*3, channel, 1)
-        self.output = nn.Conv2d(channel, 1, kernel_size, padding=1)
+        self.output = nn.Conv2d(channel, Ichannel, kernel_size, padding=1)
 
     def forward(self, x):
-        x = x.permute(0, 3, 1, 2)
-
         conv0 = self.conv0(x)
         conv1 = self.conv1(conv0)
         conv2 = self.conv1(conv1)
@@ -91,7 +102,20 @@ class RelightNet(nn.Module):
         out = self.feature_fusion(out)
         out = self.output(out)
 
-        return out.permute(0, 2, 3, 1)
+        return out
+    
+    def load_state_dict(self, state_dict, strict=True):
+        own_state = self.state_dict()
+        for name, param in state_dict.items():
+            if name.find('module.') == 0:
+                name = name[len('module.'):]
+            if name in own_state:
+                if isinstance(param, nn.Parameter):
+                    param = param.data
+                try:
+                    own_state[name].copy_(param)
+                except Exception:
+                    print('no', name)
 
 
 if __name__ == '__main__':
