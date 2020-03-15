@@ -30,21 +30,20 @@ python test.py --Ichannel 3 --decomnet_path ./checkpoint_3/decom_final.pth --rel
 ## Citation
 
 ```
-@inproceedings{zhang2019kindling,
- author = {Zhang, Yonghua and Zhang, Jiawan and Guo, Xiaojie},
- title = {Kindling the Darkness: A Practical Low-light Image Enhancer},
- booktitle = {Proceedings of the 27th ACM International Conference on Multimedia},
- series = {MM '19},
- year = {2019},
- isbn = {978-1-4503-6889-6},
- location = {Nice, France},
- pages = {1632--1640},
- numpages = {9},
- url = {http://doi.acm.org/10.1145/3343031.3350926},
- doi = {10.1145/3343031.3350926},
- acmid = {3350926},
- publisher = {ACM},
- address = {New York, NY, USA},
- keywords = {image decomposition, image restoration, low light enhancement},
+@inproceedings{DBLP:conf/bmvc/WeiWY018,
+  author    = {Chen Wei and
+               Wenjing Wang and
+               Wenhan Yang and
+               Jiaying Liu},
+  title     = {Deep Retinex Decomposition for Low-Light Enhancement},
+  booktitle = {British Machine Vision Conference 2018, {BMVC} 2018, Northumbria University,
+               Newcastle, UK, September 3-6, 2018},
+  pages     = {155},
+  publisher = {{BMVA} Press},
+  year      = {2018},
+  url       = {http://bmvc2018.org/contents/papers/0451.pdf},
+  timestamp = {Thu, 12 Mar 2020 11:35:24 +0100},
+  biburl    = {https://dblp.org/rec/conf/bmvc/WeiWY018.bib},
+  bibsource = {dblp computer science bibliography, https://dblp.org}
 }
 ```
